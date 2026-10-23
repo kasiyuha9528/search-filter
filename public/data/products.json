@@ -1,0 +1,36 @@
+[
+  { "id": 1, "name": "ワイヤレスマウス", "category": "PC周辺機器", "price": 2980, "stock": 12, "description": "静音クリック対応。USBレシーバー付き" },
+  { "id": 2, "name": "メカニカルキーボード", "category": "PC周辺機器", "price": 8800, "stock": 4, "description": "茶軸。テンキーレスで省スペース" },
+  { "id": 3, "name": "USB-Cハブ 7in1", "category": "PC周辺機器", "price": 3480, "stock": 0, "description": "HDMI・SDカード・USB-A×3に対応" },
+  { "id": 4, "name": "27インチ液晶モニター", "category": "PC周辺機器", "price": 24800, "stock": 3, "description": "WQHD解像度。高さ調整スタンド付き" },
+  { "id": 5, "name": "Webカメラ フルHD", "category": "PC周辺機器", "price": 4980, "stock": 9, "description": "マイク内蔵。オンライン会議向け" },
+  { "id": 6, "name": "ノートPCスタンド", "category": "PC周辺機器", "price": 2480, "stock": 15, "description": "アルミ製。角度6段階調整" },
+
+  { "id": 7, "name": "ボールペン 黒 10本入", "category": "文具", "price": 550, "stock": 40, "description": "0.5mm。油性で速乾" },
+  { "id": 8, "name": "A5ノート 5冊パック", "category": "文具", "price": 480, "stock": 25, "description": "6mm罫線。80枚綴り" },
+  { "id": 9, "name": "ホッチキス", "category": "文具", "price": 780, "stock": 8, "description": "最大20枚綴じ。針100本付き" },
+  { "id": 10, "name": "蛍光ペン 5色セット", "category": "文具", "price": 600, "stock": 0, "description": "裏写りしにくい水性インク" },
+  { "id": 11, "name": "クリアファイル A4 20枚", "category": "文具", "price": 380, "stock": 60, "description": "透明タイプ。書類の仕分けに" },
+  { "id": 12, "name": "付箋 75mm角", "category": "文具", "price": 320, "stock": 33, "description": "強粘着タイプ。ＰＣモニターにも貼れる" },
+
+  { "id": 13, "name": "電気ケトル 1.0L", "category": "家電", "price": 3980, "stock": 6, "description": "空焚き防止機能付き" },
+  { "id": 14, "name": "コーヒーメーカー", "category": "家電", "price": 6500, "stock": 2, "description": "5杯分。保温プレート付き" },
+  { "id": 15, "name": "卓上扇風機", "category": "家電", "price": 2280, "stock": 11, "description": "ＵＳＢ給電。風量3段階" },
+  { "id": 16, "name": "空気清浄機", "category": "家電", "price": 18800, "stock": 1, "description": "適用床面積20畳。花粉モード搭載" },
+  { "id": 17, "name": "電子レンジ 17L", "category": "家電", "price": 12800, "stock": 0, "description": "フラット庫内で掃除しやすい" },
+  { "id": 18, "name": "LEDデスクライト", "category": "家電", "price": 4200, "stock": 7, "description": "調光・調色に対応。目に優しい" },
+
+  { "id": 19, "name": "ティッシュペーパー 5箱", "category": "日用品", "price": 398, "stock": 80, "description": "やわらかい2枚重ね" },
+  { "id": 20, "name": "ハンドソープ 詰替用", "category": "日用品", "price": 298, "stock": 45, "description": "泡タイプ。無香料" },
+  { "id": 21, "name": "ゴミ袋 45L 50枚", "category": "日用品", "price": 450, "stock": 30, "description": "半透明。厚手で破れにくい" },
+  { "id": 22, "name": "アルコール除菌スプレー", "category": "日用品", "price": 680, "stock": 18, "description": "500ml。手指・テーブルに使える" },
+  { "id": 23, "name": "紙コップ 100個", "category": "日用品", "price": 520, "stock": 0, "description": "205ml。来客用に" },
+  { "id": 24, "name": "ﾍﾟｰﾊﾟｰﾀｵﾙ 4ﾛｰﾙ", "category": "日用品", "price": 430, "stock": 22, "description": "吸水性の高いキッチン用" },
+
+  { "id": 25, "name": "オフィスチェア", "category": "インテリア", "price": 15800, "stock": 2, "description": "メッシュ背もたれ。ランバーサポート付き" },
+  { "id": 26, "name": "収納ボックス 3個セット", "category": "インテリア", "price": 1280, "stock": 14, "description": "折りたたみ可能。布製" },
+  { "id": 27, "name": "スチールラック 4段", "category": "インテリア", "price": 5980, "stock": 5, "description": "耐荷重各段50kg。倉庫にも" },
+  { "id": 28, "name": "観葉植物 ポトス", "category": "インテリア", "price": 1980, "stock": 3, "description": "フェイクタイプで水やり不要" },
+  { "id": 29, "name": "壁掛け時計", "category": "インテリア", "price": 2480, "stock": 0, "description": "電波時計。連続秒針で静か" },
+  { "id": 30, "name": "デスクマット", "category": "インテリア", "price": 1580, "stock": 10, "description": "PUレザー。マウスパッドとしても使える" }
+]

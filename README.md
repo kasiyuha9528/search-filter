@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 在庫検索アプリ(検索フォーム＋フィルタ表示)
 
-## Getting Started
+案件No.06(初級・Webアプリ・1日/4時間)の実践練習プロジェクトです。
 
-First, run the development server:
+## 1. プロジェクトの概要
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+30件の商品データを一覧表示し、テキスト検索とカテゴリ絞り込みを1画面で行える在庫検索アプリです。検索条件はURLに保存されるため、リロードしても条件が保持され、URLを共有すると同じ検索結果を再現できます。
+
+### 想定ユーザー
+
+| 区分 | 誰が | 主な端末 | 使う場面 |
+|---|---|---|---|
+| メイン | 倉庫・売場の現場担当者 | スマホ | 棚の前や移動中に、片手で商品や在庫を確認する |
+| サブ | 事務所の管理・受注担当者 | PC | 条件を絞った一覧のURLを現場にチャットで共有する |
+
+### 機能要件
+
+| No | 要件 |
+|---|---|
+| F1 | `products.json`(30件)を fetch して一覧表示する |
+| F2 | テキスト検索(商品名・説明文の部分一致。NFKC正規化で全角/半角、大文字/小文字を区別しない) |
+| F3 | カテゴリ絞り込み(タグ方式・単一選択。「すべて」チップで解除) |
+| F4 | 検索条件を `?q=xxx&category=yyy` としてURLに保存し、リロードやURL共有で復元する |
+| F5 | 結果が0件のときに空状態UIと「条件をクリア」ボタンを表示する |
+| F6 | 「30件中 ○件」の件数表示 |
+| M1〜M6 | スマホ対応(幅375pxで崩れない、タップ領域44px以上、入力欄16px以上、検索エリアのsticky固定、1列表示、Enterでキーボードを閉じる) |
+
+### 対象外(発展版で対応予定)
+
+- 在庫数の入力・保存(Supabaseを使う想定)
+- 発展版で保存先を切り替えやすいよう、データ取得処理は `lib/getProducts.ts` に集約する
+
+### 開発ステップ
+
+| Step | 内容 | 目安 |
+|---|---|---|
+| 0 | 要件定義(想定ユーザー、UI方式、スコープの決定) | - |
+| 1 | プロジェクト作成(create-next-app + Tailwind)、サンプルJSON 30件の作成 | 30分 |
+| 2 | `lib/getProducts.ts` でデータを取得し一覧表示(スマホ1列/PC複数列) | 30分 |
+| 3 | テキスト検索とタグ方式のカテゴリ絞り込み | 50分 |
+| 4 | URLクエリ同期とSuspense対応 | 40分 |
+| 5 | 空状態UI、件数表示、スマホ対応の仕上げ | 40分 |
+| 6 | 検証(DevToolsと実機)とREADME更新 | 50分 |
+
+## 2. 使用技術
+
+| 分類 | 技術 | 用途 |
+|---|---|---|
+| フレームワーク | Next.js (App Router) | 画面構成、ルーティング |
+| 言語 | TypeScript | 型による安全な実装 |
+| スタイル | Tailwind CSS | レスポンシブ対応、UI作成 |
+| 状態管理 | URL searchParams / React state | 検索条件の保持と共有 |
+| データ | JSON(`public/data/products.json`) | サンプル商品データ30件 |
+
+## 3. 全体のフロー
+
+```mermaid
+flowchart TD
+    A[ページを開く] --> B[URLから q と category を読み込む]
+    B --> C[products.json を fetch]
+    C --> D[絞り込み処理<br/>テキスト検索 AND カテゴリ]
+    D --> E{結果は1件以上?}
+    E -- はい --> F[一覧と件数を表示]
+    E -- いいえ --> G[空状態UIを表示]
+    F --> H[ユーザーが検索語を入力 / チップをタップ]
+    G --> H
+    H --> I[state を更新し即座に再絞り込み]
+    I --> J[router.replace で URL を更新]
+    I --> D
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### ディレクトリ構成(予定)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+app/
+├─ page.tsx                 … Suspense で SearchPage を包む
+└─ components/
+   ├─ SearchPage.tsx        … "use client"。データ取得・state・URL同期
+   ├─ SearchForm.tsx        … 検索欄とカテゴリチップ
+   ├─ ProductList.tsx       … 商品カード一覧
+   └─ EmptyState.tsx        … 0件時の表示
+lib/
+├─ getProducts.ts           … データ取得(発展版でSupabaseに切り替え)
+└─ filterProducts.ts        … 絞り込みロジック(純粋関数)
+public/data/products.json
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 4. 学んだ事
 
-## Learn More
+詳しい内容は [docs/learning-notes.md](docs/learning-notes.md) にまとめています。
 
-To learn more about Next.js, take a look at the following resources:
+- 案件文に書かれていないユーザー像を、市場背景と要件から逆算して定義した
+- 100ms要件のため、絞り込みはサーバーではなくクライアント側で行う設計にした
+- URLを「状態の保存場所」として使い、履歴を汚さないよう `router.replace` を選んだ
+- 現場担当者のスマホ利用を想定し、スマホ対応を正式な要件に追加した
+- 在庫入力は「保存先」の問題でスコープが大きく変わるため、発展版に切り出した
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 5. こだわった点
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **ユーザー像からUIを決めた**: 現場担当者がスマホの片手操作で使うことを想定し、選択肢が常に見えて1タップで切り替えられるタグ方式・単一選択を採用した。
+- **事務所と現場をURLでつなぐ**: PCで絞り込んだ条件をURLで送れば、スマホで同じ結果が開けるようにした。
+- **空状態をわかりやすくした**: 「0件なのか壊れているのか」で迷わせないよう、メッセージと「条件をクリア」ボタンを表示する。
+- **発展を見越した構成**: データ取得を `lib/getProducts.ts` に集約し、後からSupabaseへ切り替えやすくした。
 
-## Deploy on Vercel
+## 6. 改善点
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- 在庫数の入力・保存機能(Supabase)を発展版で追加する
+- ひらがな/カタカナの表記ゆれ(「まうす」で「マウス」がヒット)への対応
+- 商品数が増えた場合のページネーションや、サーバー側での絞り込みへの切り替え
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 7. 検証結果
+
+開発後に記入します。
+
+| 達成基準 | 検証方法 | 結果 |
+|---|---|---|
+| 100ms以内に絞り込み結果が更新される | `performance.now()` で計測 | 未実施 |
+| 検索条件を含むURLを共有すると同じ結果が再現される | シークレットウィンドウで開いて比較 | 未実施 |
+| 結果0件のときに空状態UIが出る | `zzz` で検索 | 未実施 |
+| 不正なURLでも画面が壊れない | `?category=存在しない値` を直接開く | 未実施 |
+| スマホ幅で崩れず操作できる | DevTools(幅375px)と実機で確認 | 未実施 |
+| PCで作ったURLがスマホで同じ結果になる | PCからスマホへURLを送って開く | 未実施 |
