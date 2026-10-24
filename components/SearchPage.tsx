@@ -1,9 +1,11 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { filterProducts, getCategories } from "@/lib/filterProducts";
 import { getProducts } from "@/lib/getProducts";
 import type { Product } from "@/lib/types";
+import EmptyState from "./EmptyState";
 import ProductList from "./ProductList";
 import SearchForm from "./SearchForm";
 
@@ -16,14 +18,22 @@ type LoadState =
 // 読み込み前に使う空の配列。毎回新しい配列を作ると useMemo が毎回計算し直すので、1つを使い回す
 const NO_PRODUCTS: Product[] = [];
 
+// 入力が止まってからURLを書き換えるまでの待ち時間(ミリ秒)。結果の表示は待たせない
+const URL_UPDATE_DELAY_MS = 300;
+
 export default function SearchPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   // 再読み込みボタンを押すたびに +1 して、useEffect を再実行させる
   const [reloadKey, setReloadKey] = useState(0);
 
-  // 検索条件。入力したらすぐ画面に反映したいので、まず state に持つ(URLへの保存は Step 4)
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
+  // 検索条件の初期値は、URLの ?q=xxx&category=yyy から読み込む。
+  // リロードしたときや、共有されたURLを開いたときに、同じ条件が復元される。
+  // 以降は、入力したらすぐ画面に反映したいので state で持ち、URLへは書き込むだけにする
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
+  const [category, setCategory] = useState<string | null>(
+    () => searchParams.get("category") || null,
+  );
 
   // 入力した瞬間の時刻。100ms以内に更新される、という達成基準の計測に使う
   const inputStartRef = useRef<number | null>(null);
@@ -53,11 +63,39 @@ export default function SearchPage() {
   // カテゴリの一覧は、商品データが変わったときだけ作り直す
   const categories = useMemo(() => getCategories(products), [products]);
 
+  // URLに存在しないカテゴリ(例: ?category=存在しない値)が書かれていても壊れないよう、
+  // 実在するカテゴリのときだけ使い、それ以外は「すべて」(null)として扱う
+  const activeCategory = category !== null && categories.includes(category) ? category : null;
+
   // 絞り込み結果は、商品・検索語・カテゴリのどれかが変わったときだけ計算し直す
   const filtered = useMemo(
-    () => filterProducts(products, query, category),
-    [products, query, category],
+    () => filterProducts(products, query, activeCategory),
+    [products, query, activeCategory],
   );
+
+  // 検索条件をURLに書き込む。履歴を増やさないよう push ではなく replaceState を使う。
+  // データの読み込みが終わってから書く(読み込み前はカテゴリを確かめられず、URLを消してしまうため)
+  const isLoaded = state.status === "success";
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      const trimmedQuery = query.trim();
+      if (trimmedQuery !== "") params.set("q", trimmedQuery);
+      if (activeCategory !== null) params.set("category", activeCategory);
+
+      const search = params.toString();
+      // URLがすでに同じなら何もしない
+      if (search === window.location.search.slice(1)) return;
+
+      const path = window.location.pathname;
+      window.history.replaceState(null, "", search === "" ? path : `${path}?${search}`);
+    }, URL_UPDATE_DELAY_MS);
+
+    // 入力が続いている間は、前の予約を取り消して待ち直す
+    return () => clearTimeout(timer);
+  }, [isLoaded, query, activeCategory]);
 
   // 画面の更新が終わったら、入力からの経過時間をコンソールに出す(Step 6の検証で使う)
   useEffect(() => {
@@ -75,6 +113,18 @@ export default function SearchPage() {
   function handleCategoryChange(next: string | null) {
     inputStartRef.current = performance.now();
     setCategory(next);
+  }
+
+  // 0件のときの「条件をクリア」。検索語だけ・カテゴリだけ・両方、の3通り
+  function handleClearQuery() {
+    inputStartRef.current = performance.now();
+    setQuery("");
+  }
+
+  function handleClearAll() {
+    inputStartRef.current = performance.now();
+    setQuery("");
+    setCategory(null);
   }
 
   function handleReload() {
@@ -110,19 +160,24 @@ export default function SearchPage() {
             query={query}
             onQueryChange={handleQueryChange}
             categories={categories}
-            selectedCategory={category}
+            selectedCategory={activeCategory}
             onCategoryChange={handleCategoryChange}
           />
 
-          <p className="mb-3 mt-4 text-sm text-slate-600">
+          <p className="mb-3 mt-3 text-sm text-slate-600">
             {products.length}件中 {filtered.length}件
           </p>
 
           {filtered.length > 0 ? (
             <ProductList products={filtered} />
           ) : (
-            // 仮の表示。Step 5 で「条件をクリア」ボタン付きの EmptyState に置き換える
-            <p className="py-10 text-center text-slate-500">該当する商品がありません</p>
+            <EmptyState
+              query={query.trim()}
+              category={activeCategory}
+              onClearQuery={handleClearQuery}
+              onClearCategory={() => handleCategoryChange(null)}
+              onClearAll={handleClearAll}
+            />
           )}
         </>
       )}
