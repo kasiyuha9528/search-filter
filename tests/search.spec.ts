@@ -150,6 +150,44 @@ test.describe("カテゴリのタグ", () => {
   });
 });
 
+// 100ms以内に更新されることを測る計測ログ(`[検索] 入力→画面更新 ○ms`)は、開発者のためのもの。
+// 公開したサイトでは出さず、URLに ?debug=1 を付けたときだけ出す
+test.describe("計測ログ", () => {
+  // ブラウザのコンソールに出た文字を集める
+  function collectLogs(page: Page) {
+    const logs: string[] = [];
+    page.on("console", (message) => logs.push(message.text()));
+    return logs;
+  }
+  const measureLogs = (logs: string[]) => logs.filter((text) => text.startsWith("[検索]"));
+
+  test("ふだんは、コンソールに計測ログが出ない", async ({ page }) => {
+    const logs = collectLogs(page);
+    await page.goto("/");
+
+    await searchInput(page).fill("usb");
+    await expect(countText(page, 2)).toBeVisible();
+    await chip(page, "家電").click();
+    await expect(countText(page, 1)).toBeVisible();
+
+    // 画面の更新(=ログを出すタイミング)が終わったあとで確かめる
+    expect(measureLogs(logs)).toHaveLength(0);
+  });
+
+  test("?debug=1 のときだけ計測ログが出て、URLにも debug=1 が残る", async ({ page }) => {
+    const logs = collectLogs(page);
+    await page.goto("/?debug=1");
+
+    await searchInput(page).fill("usb");
+    await expect(countText(page, 2)).toBeVisible();
+
+    await expect.poll(() => measureLogs(logs).length).toBeGreaterThan(0);
+    expect(measureLogs(logs)[0]).toMatch(/^\[検索\] 入力→画面更新 [\d.]+ms \/ 2件$/);
+    // 検索条件のURL同期で、debug=1 が消えない(計測の途中でリロードしても、ログが出続ける)
+    await expect.poll(currentSearch(page)).toBe("?q=usb&debug=1");
+  });
+});
+
 test.describe("空状態", () => {
   test("zzz で「該当する商品がありません」が出て、クリアすると全件に戻る", async ({ page }) => {
     await page.goto("/");

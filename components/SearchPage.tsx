@@ -35,8 +35,16 @@ export default function SearchPage() {
     () => searchParams.get("category") || null,
   );
 
-  // 入力した瞬間の時刻。100ms以内に更新される、という達成基準の計測に使う
+  // 計測ログ(100ms以内に更新される、という達成基準の確認用)は、開発者のためのもの。
+  // 公開したサイトでは出さず、URLに ?debug=1 が付いているときだけ出す。
+  // 最初に1回だけ読む(URLの書き換えで debug が消えても、計測の途中で止まらないように)
+  const [debug] = useState(() => searchParams.get("debug") === "1");
+
+  // 入力した瞬間の時刻。debug のときだけ記録する
   const inputStartRef = useRef<number | null>(null);
+  function markInputStart() {
+    if (debug) inputStartRef.current = performance.now();
+  }
 
   useEffect(() => {
     // 画面を離れた後に結果が返ってきても、state を更新しないための目印
@@ -79,6 +87,8 @@ export default function SearchPage() {
     const trimmedQuery = query.trim();
     if (trimmedQuery !== "") params.set("q", trimmedQuery);
     if (activeCategory !== null) params.set("category", activeCategory);
+    // 計測中にリロードしても、ログが出続けるよう debug=1 を残す
+    if (debug) params.set("debug", "1");
 
     const search = params.toString();
     // URLがすでに同じなら何もしない
@@ -86,7 +96,7 @@ export default function SearchPage() {
 
     const path = window.location.pathname;
     window.history.replaceState(null, "", search === "" ? path : `${path}?${search}`);
-  }, [query, activeCategory]);
+  }, [query, activeCategory, debug]);
 
   // 入力している間は、止まってから0.3秒後にURLを書き込む(1文字ごとに書き換えないため)。
   // データの読み込みが終わってから書く(読み込み前はカテゴリを確かめられず、URLを消してしまうため)
@@ -100,7 +110,7 @@ export default function SearchPage() {
     return () => clearTimeout(timer);
   }, [isLoaded, syncUrl]);
 
-  // 画面の更新が終わったら、入力からの経過時間をコンソールに出す(Step 6の検証で使う)
+  // 画面の更新が終わったら、入力からの経過時間をコンソールに出す(?debug=1 のときだけ。Step 6の検証で使う)
   useEffect(() => {
     if (inputStartRef.current === null) return;
     const elapsed = performance.now() - inputStartRef.current;
@@ -109,23 +119,23 @@ export default function SearchPage() {
   }, [filtered]);
 
   function handleQueryChange(value: string) {
-    inputStartRef.current = performance.now();
+    markInputStart();
     setQuery(value);
   }
 
   function handleCategoryChange(next: string | null) {
-    inputStartRef.current = performance.now();
+    markInputStart();
     setCategory(next);
   }
 
   // 0件のときの「条件をクリア」。検索語だけ・カテゴリだけ・両方、の3通り
   function handleClearQuery() {
-    inputStartRef.current = performance.now();
+    markInputStart();
     setQuery("");
   }
 
   function handleClearAll() {
-    inputStartRef.current = performance.now();
+    markInputStart();
     setQuery("");
     setCategory(null);
   }
