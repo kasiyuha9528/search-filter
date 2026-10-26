@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { filterProducts, getCategories } from "@/lib/filterProducts";
 import { getProducts } from "@/lib/getProducts";
 import type { Product } from "@/lib/types";
@@ -73,29 +73,32 @@ export default function SearchPage() {
     [products, query, activeCategory],
   );
 
-  // 検索条件をURLに書き込む。履歴を増やさないよう push ではなく replaceState を使う。
+  // いまの検索条件を、URLに書き込む。履歴を増やさないよう push ではなく replaceState を使う
+  const syncUrl = useCallback(() => {
+    const params = new URLSearchParams();
+    const trimmedQuery = query.trim();
+    if (trimmedQuery !== "") params.set("q", trimmedQuery);
+    if (activeCategory !== null) params.set("category", activeCategory);
+
+    const search = params.toString();
+    // URLがすでに同じなら何もしない
+    if (search === window.location.search.slice(1)) return;
+
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", search === "" ? path : `${path}?${search}`);
+  }, [query, activeCategory]);
+
+  // 入力している間は、止まってから0.3秒後にURLを書き込む(1文字ごとに書き換えないため)。
   // データの読み込みが終わってから書く(読み込み前はカテゴリを確かめられず、URLを消してしまうため)
   const isLoaded = state.status === "success";
   useEffect(() => {
     if (!isLoaded) return;
 
-    const timer = setTimeout(() => {
-      const params = new URLSearchParams();
-      const trimmedQuery = query.trim();
-      if (trimmedQuery !== "") params.set("q", trimmedQuery);
-      if (activeCategory !== null) params.set("category", activeCategory);
-
-      const search = params.toString();
-      // URLがすでに同じなら何もしない
-      if (search === window.location.search.slice(1)) return;
-
-      const path = window.location.pathname;
-      window.history.replaceState(null, "", search === "" ? path : `${path}?${search}`);
-    }, URL_UPDATE_DELAY_MS);
+    const timer = setTimeout(syncUrl, URL_UPDATE_DELAY_MS);
 
     // 入力が続いている間は、前の予約を取り消して待ち直す
     return () => clearTimeout(timer);
-  }, [isLoaded, query, activeCategory]);
+  }, [isLoaded, syncUrl]);
 
   // 画面の更新が終わったら、入力からの経過時間をコンソールに出す(Step 6の検証で使う)
   useEffect(() => {
@@ -159,6 +162,7 @@ export default function SearchPage() {
           <SearchForm
             query={query}
             onQueryChange={handleQueryChange}
+            onQueryBlur={syncUrl}
             categories={categories}
             selectedCategory={activeCategory}
             onCategoryChange={handleCategoryChange}

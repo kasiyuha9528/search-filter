@@ -1,6 +1,7 @@
 type Props = {
   query: string;
   onQueryChange: (value: string) => void;
+  onQueryBlur: () => void; // 検索欄から離れたとき(Enterでキーボードを閉じたときも含む)
   categories: string[];
   selectedCategory: string | null; // null は「すべて」
   onCategoryChange: (category: string | null) => void;
@@ -17,6 +18,7 @@ function chipClass(selected: boolean) {
 export default function SearchForm({
   query,
   onQueryChange,
+  onQueryBlur,
   categories,
   selectedCategory,
   onCategoryChange,
@@ -35,8 +37,10 @@ export default function SearchForm({
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
+          // 検索欄から離れたら、URLを待たずに最新にする(離れた直後にURLをコピーしても、ずれないように)
+          onBlur={onQueryBlur}
           onKeyDown={(event) => {
-            // Enterでキーボードを閉じて、結果が隠れないようにする
+            // Enterでキーボードを閉じて、結果が隠れないようにする(blurするので、上のonBlurも動く)
             if (event.key === "Enter") event.currentTarget.blur();
           }}
           enterKeyHint="search"

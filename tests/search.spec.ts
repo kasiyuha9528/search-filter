@@ -73,6 +73,37 @@ test.describe("検索", () => {
     await expect.poll(currentSearch(page)).toBe("?q=usb");
   });
 
+  // 入力が止まって0.3秒後にURLを書き換える仕組みだと、入力直後にURLをコピーすると古いURLになる。
+  // 入力欄から離れたとき(Enterも含む)は、待たずにURLを更新することを確かめる
+  for (const how of ["blur", "Enter"] as const) {
+    test(`入力して ${how} すると、0.3秒待たずにURLが更新される`, async ({ page }) => {
+      await page.goto("/");
+      await expect(cards(page)).toHaveCount(TOTAL); // データの読み込みが終わるのを待つ
+
+      // 「入力 → 離れる → URLを読む」を、ページの中で1回の処理として実行する。
+      // 途中で時間が進まないので、0.3秒の待ち時間が過ぎて「たまたま更新された」ことはない
+      const search = await page.evaluate(async (how) => {
+        const input = document.querySelector<HTMLInputElement>('input[type="search"]')!;
+        input.focus();
+
+        // Reactは入力欄の値の変更を、この方法で通知しないと気づかない
+        const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+        setValue.call(input, "usb");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        await Promise.resolve(); // Reactが画面を更新し終えるのを待つ(時間は進まない)
+
+        if (how === "blur") {
+          input.blur();
+        } else {
+          input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+        }
+        return window.location.search;
+      }, how);
+
+      expect(search).toBe("?q=usb");
+    });
+  }
+
   test("全角と半角を区別しない(ＵＳＢ でも usb と同じ結果)", async ({ page }) => {
     await page.goto("/");
     await searchInput(page).fill("ＵＳＢ");
