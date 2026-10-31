@@ -11,7 +11,7 @@ import SearchForm from "./SearchForm";
 
 // 画面の状態:読み込み中 / 成功 / 失敗 のどれか1つ
 type LoadState =
-  | { status: "loading" 
+  | { status: "loading" }
   | { status: "success"; products: Product[] }
   | { status: "error"; message: string };
 
